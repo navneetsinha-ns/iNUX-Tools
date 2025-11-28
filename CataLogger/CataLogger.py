@@ -256,8 +256,8 @@ def apply_language_to_prefix(prefix: str, lang_code: str) -> str:
 # -------------------------------------------------
 # STREAMLIT UI
 # -------------------------------------------------
-st.title("📦 CataLogger ")
-st.subheader("iNUX Resource YAML Generator - Register Interactive Documents for the iNUX Catalog", divider="rainbow")
+st.title("Cata:green[Logger] 📦")
+st.subheader("iNUX Resource YAML Generator ➤ Register Interactive Documents for the iNUX Catalog", divider="rainbow")
 
 st.markdown(
     """
