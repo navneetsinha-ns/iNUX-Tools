@@ -4,6 +4,12 @@ from datetime import datetime  # for timestamp in filename
 import io
 import zipfile
 
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import mm
+from io import BytesIO
+import yaml
+
 # -------------------------------------------------
 # 0. LANGUAGE OPTIONS
 # -------------------------------------------------
@@ -266,6 +272,109 @@ def apply_language_to_prefix(prefix: str, lang_code: str) -> str:
     else:
         return f"{prefix}_{lang_code}"
 
+# YAML TO PDF
+def yaml_to_pdf_bytes(yaml_text: str) -> bytes:
+    yaml_data = yaml.safe_load(yaml_text)
+
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    x_margin = 20 * mm
+    y = height - 25 * mm
+
+    # ---------- TITLE ----------
+    title = yaml_data.get("title", "Untitled resource")
+    c.setFont("Helvetica-Bold", 18)
+    c.drawString(x_margin, y, title)
+    y -= 15 * mm
+
+    # Helper functions (exact same as before)
+    def draw_section_title(text, y):
+        c.setFont("Helvetica-Bold", 14)
+        c.drawString(x_margin, y, text)
+        return y - 8 * mm
+
+    def draw_label_value(label, value, y):
+        if value in (None, "", [], {}):
+            return y
+        c.setFont("Helvetica", 11)
+        line = f"{label}: {value}"
+        c.drawString(x_margin, y, line)
+        return y - 6 * mm
+
+    def yes_no(val):
+        if val is True: return "Yes"
+        if val is False: return "No"
+        return val
+
+    # ---------- RESOURCE IDENTIFICATION ----------
+    y = draw_section_title("Resource identification & topic", y)
+    y = draw_label_value("Item ID", yaml_data.get("item_id"), y)
+    y = draw_label_value("Topic", yaml_data.get("topic"), y)
+
+    # ---------- TYPE & ACCESS ----------
+    y -= 4 * mm
+    y = draw_section_title("Type & access", y)
+    y = draw_label_value("Resource type", yaml_data.get("resource_type"), y)
+    y = draw_label_value("URL", yaml_data.get("url"), y)
+    y = draw_label_value("Date released", yaml_data.get("date_released"), y)
+
+    # ---------- CONTENT & METADATA ----------
+    y -= 4 * mm
+    y = draw_section_title("Content & metadata", y)
+    y = draw_label_value("Short description", yaml_data.get("description_short"), y)
+
+    keywords = yaml_data.get("keywords", [])
+    if keywords:
+        y = draw_label_value("Keywords", ", ".join(keywords), y)
+
+    y = draw_label_value("Multipage app", yes_no(yaml_data.get("multipage_app")), y)
+    y = draw_label_value("Number of pages", yaml_data.get("num_pages"), y)
+    y = draw_label_value("Interactive plots", yes_no(yaml_data.get("interactive_plots")), y)
+    y = draw_label_value("Number of interactive plots", yaml_data.get("num_interactive_plots"), y)
+    y = draw_label_value("Assessments included", yes_no(yaml_data.get("assessments_included")), y)
+    y = draw_label_value("Number of assessment questions", yaml_data.get("num_assessment_questions"), y)
+    y = draw_label_value("Videos included", yes_no(yaml_data.get("videos_included")), y)
+    y = draw_label_value("Number of videos", yaml_data.get("num_videos"), y)
+
+    # ---------- EDUCATIONAL FIT ----------
+    y -= 4 * mm
+    y = draw_section_title("Educational fit", y)
+    y = draw_label_value("Time required", yaml_data.get("time_required"), y)
+    y = draw_label_value("Prerequisites", yaml_data.get("prerequisites"), y)
+
+    fit_for = yaml_data.get("fit_for", [])
+    if fit_for:
+        y = draw_label_value("Fit for", ", ".join(fit_for), y)
+
+    # ---------- AUTHORS ----------
+    y -= 4 * mm
+    y = draw_section_title("Authors & references", y)
+
+    authors = yaml_data.get("authors", [])
+    for a in authors:
+        name = a.get("name", "Unknown")
+        aff = a.get("affiliation", "")
+        line = f"Author: {name}" + (f" ({aff})" if aff else "")
+        c.setFont("Helvetica", 11)
+        c.drawString(x_margin, y, line)
+        y -= 6 * mm
+
+    references = yaml_data.get("references", [])
+    if references:
+        c.setFont("Helvetica", 11)
+        c.drawString(x_margin, y, "References:")
+        y -= 6 * mm
+        for ref in references:
+            c.drawString(x_margin + 5 * mm, y, f"- {ref}")
+            y -= 6 * mm
+
+    c.showPage()
+    c.save()
+
+    pdf_bytes = buffer.getvalue()
+    buffer.close()
+    return pdf_bytes
 
 # -------------------------------------------------
 # STREAMLIT UI
@@ -834,6 +943,16 @@ else:
         data=yaml_text,
         file_name=filename,
         mime="text/yaml",
+    )
+
+    # PDF download button
+    pdf_bytes = yaml_to_pdf_bytes(yaml_text)
+
+    st.download_button(
+        label=f"⬇️ Download YAML as {filename.replace(".yaml", ".pdf")}",
+        data=pdf_bytes,
+        file_name=filename.replace(".yaml", ".pdf"),
+        mime="application/pdf",
     )
 
 st.success("File created. Please download it and send it to the course manager for review.")
