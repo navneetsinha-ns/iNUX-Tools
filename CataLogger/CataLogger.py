@@ -402,7 +402,7 @@ def yaml_to_pdf_bytes(yaml_text: str, language_label: str, uploaded_figures=None
     story.append(Spacer(1, 20 * mm))
     story.append(Paragraph("Resource description sheet", cover_subtitle_style))
 
-    story.append(Image("Image/inux_logo.png", width=40*mm, height=40*mm))
+    story.append(Image("FIGS/iNUX_wLogo.png", width=40*mm, height=40*mm))
 
     # NOTE: Here you could later add an Image() for the iNUX logo if you have a file path.
     # e.g. story.append(Image("path/to/inux_logo.png", width=40*mm, height=40*mm))
