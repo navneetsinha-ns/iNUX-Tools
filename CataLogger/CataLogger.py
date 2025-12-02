@@ -5,10 +5,22 @@ import io
 import zipfile
 
 from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
 from reportlab.lib.units import mm
+from reportlab.lib import colors
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer,
+    Table,
+    TableStyle,
+    Image,  # for images in PDF
+    PageBreak,  
+)
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+
 from io import BytesIO
 import yaml
+
 
 # -------------------------------------------------
 # 0. LANGUAGE OPTIONS
@@ -81,6 +93,7 @@ NEW_CAT_OPTION = "➕ Define new category"
 NEW_SUBCAT_OPTION = "➕ Define new subcategory"
 NEW_SUBSUB_OPTION = "➕ Define new sub-subcategory"
 
+
 # -------------------------------------------------
 # HELPER FUNCTIONS
 # -------------------------------------------------
@@ -145,7 +158,7 @@ def build_yaml_text(
     time_required: str,
     prerequisites_text: str,
     fit_for_list,
-    authors,                     # <-- list of dicts: {name, affiliation}
+    authors,                     # list of dicts: {name, affiliation}
     multipage_app: bool,
     num_pages: int,
     interactive_plots: bool,
@@ -154,6 +167,7 @@ def build_yaml_text(
     num_assessment_questions: int,
     videos_included: bool,
     num_videos: int,
+    figures_meta=None,           # list of dicts: {id, original_filename, type, caption}
 ):
     """
     Build YAML as a formatted string matching the template + comments.
@@ -165,7 +179,7 @@ def build_yaml_text(
         keywords_inline = "[]"
 
     # prerequisites as single string (comma-separated)
-    prerequisites_value = prerequisites_text.strip()
+    prerequisites_value = (prerequisites_text or "").strip()
 
     # fit_for as YAML list
     if fit_for_list:
@@ -176,16 +190,17 @@ def build_yaml_text(
         fit_for_block = "fit_for: []\n"
 
     # description block with ">" style
-    desc_lines = description_short.strip().splitlines() or [""]
+    desc_lines = (description_short or "").strip().splitlines() or [""]
+
     desc_block = "description_short: >\n"
     for line in desc_lines:
         desc_block += f"  {line.rstrip()}\n"
 
     # booleans as lowercase YAML
-    multipage_str = str(multipage_app).lower()
-    interactive_plots_str = str(interactive_plots).lower()
-    assessments_str = str(assessments_included).lower()
-    videos_str = str(videos_included).lower()
+    multipage_str = str(bool(multipage_app)).lower()
+    interactive_plots_str = str(bool(interactive_plots)).lower()
+    assessments_str = str(bool(assessments_included)).lower()
+    videos_str = str(bool(videos_included)).lower()
 
     # authors block
     authors_clean = [
@@ -240,18 +255,33 @@ prerequisites: {prerequisites_value}       # Required prior knowledge (e.g., Dar
 references: []                            # List any published papers, DOIs, or source materials related to this resource.
 # image_url: Optional path to a screenshot for the catalog page (e.g., /assets/images/resources/flow_tool_screenshot.png)
 """
+
+    # --- FIGURES (OPTIONAL) ---
+    figures_meta = figures_meta or []
+    if figures_meta:
+        yaml_str += "\nfigures:\n"
+        for fig in figures_meta:
+            fid = fig.get("id")
+            orig = fig.get("original_filename", "")
+            ftype = (fig.get("type") or "").strip()
+            fcap = (fig.get("caption") or "").strip()
+
+            yaml_str += f"  - id: {fid}\n"
+            if orig:
+                yaml_str += f"    original_filename: {orig}\n"
+            if ftype:
+                yaml_str += f"    type: {ftype}\n"
+            if fcap:
+                yaml_str += f"    caption: {fcap}\n"
+    else:
+        yaml_str += "\nfigures: []\n"
+
     return yaml_str
 
 
 def apply_language_to_prefix(prefix: str, lang_code: str) -> str:
     """
     Ensure the filename prefix clearly shows the language of the submitted resource.
-
-    Rules:
-    - If prefix already ends with a language code:
-        - same as lang_code  -> keep one (en stays en, not en_en)
-        - different          -> keep both (en_fr, de_en, etc.)
-    - If prefix has no language -> append _{lang_code}
     """
     lang_codes = set(LANGUAGE_OPTIONS.values())
     parts = prefix.split("_")
@@ -260,121 +290,386 @@ def apply_language_to_prefix(prefix: str, lang_code: str) -> str:
         core = "_".join(parts[:-1]) if len(parts) > 1 else ""
 
         if existing_lang == lang_code:
-            # en_en -> en, de_de -> de, etc.
             return prefix
         else:
-            # en_fr, de_en, etc.
             if core:
                 return f"{core}_{existing_lang}_{lang_code}"
             else:
-                # edge case: prefix was just "en"
                 return f"{existing_lang}_{lang_code}"
     else:
         return f"{prefix}_{lang_code}"
 
-# YAML TO PDF
-def yaml_to_pdf_bytes(yaml_text: str) -> bytes:
-    yaml_data = yaml.safe_load(yaml_text)
+
+# YAML → PDF
+def yaml_to_pdf_bytes(yaml_text: str, language_label: str, uploaded_figures=None) -> bytes:
+    """
+    Create a nicely formatted A4 PDF 'resource sheet' from the YAML text.
+    Uses a structured layout (sections, tables, figure section).
+    """
+    data = yaml.safe_load(yaml_text) or {}
 
     buffer = BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
-    x_margin = 20 * mm
-    y = height - 25 * mm
 
-    # ---------- TITLE ----------
-    title = yaml_data.get("title", "Untitled resource")
-    c.setFont("Helvetica-Bold", 18)
-    c.drawString(x_margin, y, title)
-    y -= 15 * mm
+    # --- Document setup ---
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        leftMargin=20 * mm,
+        rightMargin=20 * mm,
+        topMargin=20 * mm,
+        bottomMargin=20 * mm,
+    )
 
-    # Helper functions (exact same as before)
-    def draw_section_title(text, y):
-        c.setFont("Helvetica-Bold", 14)
-        c.drawString(x_margin, y, text)
-        return y - 8 * mm
+    styles = getSampleStyleSheet()
 
-    def draw_label_value(label, value, y):
-        if value in (None, "", [], {}):
-            return y
-        c.setFont("Helvetica", 11)
-        line = f"{label}: {value}"
-        c.drawString(x_margin, y, line)
-        return y - 6 * mm
+    # Custom styles
+    project_style = ParagraphStyle(
+        "ProjectHeader",
+        parent=styles["Normal"],
+        fontSize=11,
+        leading=14,
+        textColor=colors.black,
+        spaceAfter=4,
+    )
+    title_style = ParagraphStyle(
+        "ResourceTitle",
+        parent=styles["Heading1"],
+        fontSize=18,
+        leading=22,
+        spaceAfter=8,
+    )
+    label_style = ParagraphStyle(
+        "Label",
+        parent=styles["Normal"],
+        fontSize=10,
+        leading=12,
+        textColor=colors.black,
+    )
+    section_style = ParagraphStyle(
+        "SectionTitle",
+        parent=styles["Heading2"],
+        fontSize=13,
+        leading=16,
+        spaceBefore=10,
+        spaceAfter=4,
+    )
+    caption_style = ParagraphStyle(
+        "FigureCaption",
+        parent=styles["Normal"],
+        fontSize=9,
+        leading=11,
+        italic=True,
+        alignment=1,   # center
+        spaceBefore=2,
+        spaceAfter=0,
+    )
 
-    def yes_no(val):
-        if val is True: return "Yes"
-        if val is False: return "No"
-        return val
 
-    # ---------- RESOURCE IDENTIFICATION ----------
-    y = draw_section_title("Resource identification & topic", y)
-    y = draw_label_value("Item ID", yaml_data.get("item_id"), y)
-    y = draw_label_value("Topic", yaml_data.get("topic"), y)
+    def yn(val):
+        if val is True:
+            return "Yes"
+        if val is False:
+            return "No"
+        if val in (None, "", [], {}):
+            return "—"
+        return str(val)
 
-    # ---------- TYPE & ACCESS ----------
-    y -= 4 * mm
-    y = draw_section_title("Type & access", y)
-    y = draw_label_value("Resource type", yaml_data.get("resource_type"), y)
-    y = draw_label_value("URL", yaml_data.get("url"), y)
-    y = draw_label_value("Date released", yaml_data.get("date_released"), y)
+    story = []
 
-    # ---------- CONTENT & METADATA ----------
-    y -= 4 * mm
-    y = draw_section_title("Content & metadata", y)
-    y = draw_label_value("Short description", yaml_data.get("description_short"), y)
+    # ---------- COVER PAGE ----------
+    cover_title_style = ParagraphStyle(
+        "CoverTitle",
+        parent=styles["Heading1"],
+        fontSize=24,
+        leading=28,
+        alignment=1,        # centered
+        spaceAfter=12,
+    )
+    cover_subtitle_style = ParagraphStyle(
+        "CoverSubtitle",
+        parent=styles["Heading2"],
+        fontSize=14,
+        leading=18,
+        alignment=1,        # centered
+        textColor=colors.black,
+        spaceAfter=6,
+    )
 
-    keywords = yaml_data.get("keywords", [])
-    if keywords:
-        y = draw_label_value("Keywords", ", ".join(keywords), y)
+    # Space down to roughly the middle
+    story.append(Spacer(1, 60 * mm))
+    story.append(Paragraph("iNUX Groundwater", cover_title_style))
+    story.append(Paragraph("An Erasmus+ Project", cover_subtitle_style))
+    story.append(Spacer(1, 20 * mm))
+    story.append(Paragraph("Resource description sheet", cover_subtitle_style))
 
-    y = draw_label_value("Multipage app", yes_no(yaml_data.get("multipage_app")), y)
-    y = draw_label_value("Number of pages", yaml_data.get("num_pages"), y)
-    y = draw_label_value("Interactive plots", yes_no(yaml_data.get("interactive_plots")), y)
-    y = draw_label_value("Number of interactive plots", yaml_data.get("num_interactive_plots"), y)
-    y = draw_label_value("Assessments included", yes_no(yaml_data.get("assessments_included")), y)
-    y = draw_label_value("Number of assessment questions", yaml_data.get("num_assessment_questions"), y)
-    y = draw_label_value("Videos included", yes_no(yaml_data.get("videos_included")), y)
-    y = draw_label_value("Number of videos", yaml_data.get("num_videos"), y)
+    story.append(Image("Image/inux_logo.png", width=40*mm, height=40*mm))
 
-    # ---------- EDUCATIONAL FIT ----------
-    y -= 4 * mm
-    y = draw_section_title("Educational fit", y)
-    y = draw_label_value("Time required", yaml_data.get("time_required"), y)
-    y = draw_label_value("Prerequisites", yaml_data.get("prerequisites"), y)
+    # NOTE: Here you could later add an Image() for the iNUX logo if you have a file path.
+    # e.g. story.append(Image("path/to/inux_logo.png", width=40*mm, height=40*mm))
 
-    fit_for = yaml_data.get("fit_for", [])
-    if fit_for:
-        y = draw_label_value("Fit for", ", ".join(fit_for), y)
+    # Move to next page for the actual content
+    story.append(PageBreak())
 
-    # ---------- AUTHORS ----------
-    y -= 4 * mm
-    y = draw_section_title("Authors & references", y)
 
-    authors = yaml_data.get("authors", [])
-    for a in authors:
-        name = a.get("name", "Unknown")
-        aff = a.get("affiliation", "")
-        line = f"Author: {name}" + (f" ({aff})" if aff else "")
-        c.setFont("Helvetica", 11)
-        c.drawString(x_margin, y, line)
-        y -= 6 * mm
+    # -------- HEADER / TITLE BLOCK --------
+    raw_title = data.get("title") or "Untitled resource"
+    title = str(raw_title)
 
-    references = yaml_data.get("references", [])
-    if references:
-        c.setFont("Helvetica", 11)
-        c.drawString(x_margin, y, "References:")
-        y -= 6 * mm
-        for ref in references:
-            c.drawString(x_margin + 5 * mm, y, f"- {ref}")
-            y -= 6 * mm
+    topic = str((data.get("topic") or "—") or "—")
+    raw_item_id = (data.get("item_id") or "").strip()
+    show_item_id = bool(raw_item_id) and "TO_BE_FILLED" not in raw_item_id.upper()
 
-    c.showPage()
-    c.save()
+    story.append(
+        Paragraph(
+            "iNUX – Interactive Understanding of Groundwater Hydrology and Hydrogeology",
+            project_style,
+        )
+    )
+    story.append(Paragraph(title, title_style))
+    story.append(Paragraph(f"<b>Topic:</b> {topic}", label_style))
+    story.append(Paragraph(f"<b>Language:</b> {language_label}", label_style))
+    if show_item_id:
+        story.append(Paragraph(f"<b>Item ID:</b> {raw_item_id}", label_style))
+    story.append(Spacer(1, 8))
+
+    # -------- 1. BASIC INFORMATION --------
+    story.append(Paragraph("1. Basic information", section_style))
+
+    basic_data = [
+        ["Resource type", data.get("resource_type", "—")],
+        ["URL", data.get("url", "—")],
+        ["Date released", data.get("date_released", "TO_BE_FILLED_BY_COURSE_MANAGER")],
+        ["Time required", data.get("time_required", "—")],
+    ]
+    basic_table = Table(basic_data, colWidths=[45 * mm, 115 * mm])
+    basic_table.setStyle(
+        TableStyle(
+            [
+                ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+                ("FONTSIZE", (0, 0), (-1, -1), 9),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("INNERGRID", (0, 0), (-1, -1), 0.25, colors.grey),
+                ("BOX", (0, 0), (-1, -1), 0.25, colors.grey),
+                ("BACKGROUND", (0, 0), (0, -1), colors.whitesmoke),
+            ]
+        )
+    )
+    story.append(basic_table)
+    story.append(Spacer(1, 6))
+
+    # -------- 2. PEDAGOGICAL OVERVIEW --------
+    story.append(Paragraph("2. Pedagogical overview", section_style))
+
+    desc = (data.get("description_short") or "").strip()
+    if desc:
+        story.append(Paragraph("<b>Short description</b>", label_style))
+        story.append(Paragraph(desc, styles["Normal"]))
+        story.append(Spacer(1, 4))
+
+    keywords = data.get("keywords", [])
+    if isinstance(keywords, list) and keywords:
+        kw_text = ", ".join(str(k) for k in keywords)
+    elif isinstance(keywords, str) and keywords.strip():
+        kw_text = keywords
+    else:
+        kw_text = "—"
+
+    fit_for = data.get("fit_for", [])
+    if isinstance(fit_for, list) and fit_for:
+        fit_for_text = ", ".join(str(x) for x in fit_for)
+    else:
+        fit_for_text = "—"
+
+    story.append(Paragraph(f"<b>Keywords:</b> {kw_text}", label_style))
+    story.append(Paragraph(f"<b>Best suited for:</b> {fit_for_text}", label_style))
+    story.append(Spacer(1, 6))
+
+    # -------- 3. TECHNICAL DETAILS --------
+    story.append(Paragraph("3. Technical details", section_style))
+
+    tech_data = [
+        ["Multipage app", yn(data.get("multipage_app"))],
+        ["Number of pages", data.get("num_pages", "—")],
+        ["Interactive plots", yn(data.get("interactive_plots"))],
+        ["Number of interactive plots", data.get("num_interactive_plots", "—")],
+        ["Assessments included", yn(data.get("assessments_included"))],
+        ["Number of assessment questions", data.get("num_assessment_questions", "—")],
+        ["Videos included", yn(data.get("videos_included"))],
+        ["Number of videos", data.get("num_videos", "—")],
+    ]
+    tech_table = Table(tech_data, colWidths=[60 * mm, 100 * mm])
+    tech_table.setStyle(
+        TableStyle(
+            [
+                ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+                ("FONTSIZE", (0, 0), (-1, -1), 9),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("INNERGRID", (0, 0), (-1, -1), 0.25, colors.grey),
+                ("BOX", (0, 0), (-1, -1), 0.25, colors.grey),
+                ("BACKGROUND", (0, 0), (0, -1), colors.whitesmoke),
+            ]
+        )
+    )
+    story.append(tech_table)
+    story.append(Spacer(1, 6))
+
+    # -------- 4. EDUCATIONAL FIT --------
+    story.append(Paragraph("4. Educational fit", section_style))
+
+    time_required = data.get("time_required", "—")
+    prereq = data.get("prerequisites", "—")
+
+    edu_data = [
+        ["Time required", time_required],
+        ["Prerequisites", prereq],
+        ["Best suited for", fit_for_text],
+    ]
+    edu_table = Table(edu_data, colWidths=[60 * mm, 100 * mm])
+    edu_table.setStyle(
+        TableStyle(
+            [
+                ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+                ("FONTSIZE", (0, 0), (-1, -1), 9),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("INNERGRID", (0, 0), (-1, -1), 0.25, colors.grey),
+                ("BOX", (0, 0), (-1, -1), 0.25, colors.grey),
+                ("BACKGROUND", (0, 0), (0, -1), colors.whitesmoke),
+            ]
+        )
+    )
+    story.append(edu_table)
+    story.append(Spacer(1, 6))
+
+    # -------- 5. AUTHORS & REFERENCES --------
+    story.append(Paragraph("5. Authors & references", section_style))
+
+    authors_list = data.get("authors", [])
+    if authors_list:
+        story.append(Paragraph("<b>Authors</b>", label_style))
+        for a in authors_list:
+            name = a.get("name", "Unknown")
+            aff = a.get("affiliation", "")
+            line = name
+            if aff:
+                line += f" ({aff})"
+            story.append(Paragraph(f"• {line}", styles["Normal"]))
+        story.append(Spacer(1, 4))
+    else:
+        story.append(Paragraph("No authors provided.", styles["Normal"]))
+        story.append(Spacer(1, 4))
+
+    refs = data.get("references", [])
+    story.append(Paragraph("<b>References</b>", label_style))
+    if refs:
+        for r in refs:
+            story.append(Paragraph(f"– {r}", styles["Normal"]))
+    else:
+        story.append(Paragraph("No references provided.", styles["Normal"]))
+    story.append(Spacer(1, 8))
+
+    # -------- 6. FIGURES & ILLUSTRATIONS (OPTIONAL) --------
+    figures_info = data.get("figures") or []
+    uploaded_figures = uploaded_figures or []
+
+    if uploaded_figures:
+        story.append(Paragraph("6. Figures and illustrations", section_style))
+        story.append(Spacer(1, 4))
+
+        for idx, fig_file in enumerate(uploaded_figures, start=1):
+            info = figures_info[idx - 1] if idx - 1 < len(figures_info) else {}
+
+            ftype = (info.get("type") or "").strip()
+            fcap = (info.get("caption") or "").strip()
+
+            # Build nice caption text:
+            # Figure 1. Caption text (Screenshot)
+            # or Figure 1. Uploaded image 1 (Photo), etc.
+            if not fcap:
+                base_caption = f"Uploaded image {idx}"
+            else:
+                base_caption = fcap
+
+            media_suffix = f" ({ftype})" if ftype else ""
+            caption_text = f"Figure {idx}. {base_caption}{media_suffix}"
+
+            try:
+                img = Image(BytesIO(fig_file.getvalue()))
+                img._restrictSize(160 * mm, 90 * mm)  # max width/height
+
+
+                # Table with 2 rows: [image], [caption]
+                fig_table = Table(
+                    [[img], [Paragraph(caption_text, caption_style)]],
+                    colWidths=[160 * mm],
+                )
+                fig_table.setStyle(
+                    TableStyle(
+                        [
+                            ("BOX", (0, 0), (-1, -1), 0.5, colors.grey),  # border
+                            ("VALIGN", (0, 0), (-1, 0), "MIDDLE"),
+                            ("ALIGN", (0, 0), (-1, 0), "CENTER"),       # center image
+                            ("ALIGN", (0, 1), (-1, 1), "CENTER"),       # center caption
+                            ("TOPPADDING", (0, 0), (-1, -1), 4),
+                            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                        ]
+                    )
+                )
+
+                story.append(fig_table)
+
+            except Exception:
+                # If the image cannot be loaded, still show the caption as text
+                story.append(Paragraph(caption_text, caption_style))
+
+            story.append(Spacer(1, 10))
+
+
+    # ---------- HEADER & FOOTER DRAWING FUNCTION ----------
+    def add_header_footer(canvas, doc_):
+        page_num = canvas.getPageNumber()
+        width, height = A4
+        margin = 20 * mm
+
+        # No header/footer on the cover page (page 1)
+        if page_num == 1:
+            return
+
+        # ----- Header (even pages only) -----
+        if page_num % 2 == 0:
+            header_y = height - 15 * mm
+            canvas.setFont("Helvetica", 9)
+            header_text = "iNUX Groundwater - An Erasmus+ Project"
+            canvas.drawCentredString(width / 2.0, header_y, header_text)
+            # thin line under header
+            canvas.setLineWidth(0.5)
+            canvas.line(margin, header_y - 2 * mm, width - margin, header_y - 2 * mm)
+
+        # ----- Footer (all pages from 2 onward) -----
+        footer_y = 15 * mm
+        canvas.setFont("Helvetica", 9)
+
+        # Logical page number: start counting content from 1 on physical page 2
+        logical_page_num = page_num - 1
+        page_label = str(logical_page_num)
+
+        # thin line above footer
+        canvas.setLineWidth(0.5)
+        canvas.line(margin, footer_y + 3 * mm, width - margin, footer_y + 3 * mm)
+
+        # page number at bottom center
+        canvas.drawCentredString(width / 2.0, footer_y, page_label)
+
+    # --- Build PDF with header/footer ---
+    doc.build(
+        story,
+        onFirstPage=add_header_footer,   # will skip header/footer internally for page 1
+        onLaterPages=add_header_footer,
+    )
 
     pdf_bytes = buffer.getvalue()
     buffer.close()
     return pdf_bytes
+
 
 # -------------------------------------------------
 # STREAMLIT UI
@@ -382,11 +677,14 @@ def yaml_to_pdf_bytes(yaml_text: str) -> bytes:
 st.set_page_config(page_title="CataLogger", page_icon="📦", layout="centered")
 
 st.title("Cata:green[Logger] 📦")
-st.subheader("iNUX Resource YAML Generator ➤ Register Interactive Documents for the iNUX Catalog", divider="rainbow")
+st.subheader(
+    "iNUX Resource YAML Generator ➤ Register Interactive Documents for the iNUX Catalog",
+    divider="rainbow",
+)
 
 st.markdown(
     """
-    Use this form to propose a new **teaching resource** for the iNUX catalog. The subsequent mask collect all required information.
+    Use this form to propose a new **teaching resource** for the iNUX catalog. The subsequent mask collects all required information.
     
     At the end, you can download a YAML (txt) file that contains all data, and send it to the catalog editors for further processing.
     """
@@ -397,7 +695,8 @@ if "form_done" not in st.session_state:
     st.session_state["form_done"] = False
 if "ready_for_download" not in st.session_state:
     st.session_state["ready_for_download"] = False
-
+if "show_preview_flag" not in st.session_state:
+    st.session_state["show_preview_flag"] = True
 if "authors_count" not in st.session_state:
     st.session_state["authors_count"] = 1   # start with 1 author by default
 
@@ -581,12 +880,9 @@ if submission_type == "Streamlit app":
             value=1,
         )
 
-
-
 # --------- AUTHORS (MULTI-AUTHOR SUPPORT) -----------------------------
 st.subheader("Author(s)")
 
-# Render fields FIRST — but we will rerun if buttons clicked
 authors = []
 for i in range(st.session_state["authors_count"]):
     idx = i + 1
@@ -598,15 +894,13 @@ for i in range(st.session_state["authors_count"]):
     )
     authors.append({"name": name, "affiliation": affiliation})
 
-
-# -------- BUTTONS BELOW --------
 col_add, col_remove, spacer1, spacer2 = st.columns([1, 1, 1, 1])
 
 with col_add:
     if st.button("➕ Add author", help="Click to insert another author row"):
         if st.session_state["authors_count"] < 10:
             st.session_state["authors_count"] += 1
-            st.rerun()      # <-- instantly rerun so new author appears
+            st.rerun()
 
 with col_remove:
     remove_disabled = st.session_state["authors_count"] <= 1
@@ -617,100 +911,136 @@ with col_remove:
             last_idx = st.session_state["authors_count"]
             st.session_state.pop(f"author_name_{last_idx}", None)
             st.session_state.pop(f"author_aff_{last_idx}", None)
-            st.rerun()      # <-- instantly rerun so last disappears
+            st.rerun()
 
+# --------- 3. OTHER DETAILS (NO FORM) --------------------------------
+st.header("3️⃣ Resource details")
 
-# ---- Rest of the inputs in a form (to keep preview + submit flow) ----
-with st.form("resource_form"):
-    # Access URL
-    access_url = st.text_input(
-        "Access link (URL)",
-        help="Link to the Streamlit app, notebook repository, shared drive folder, video, etc.",
+# Access URL
+access_url = st.text_input(
+    "Access link (URL)",
+    help="Link to the Streamlit app, notebook repository, shared drive folder, video, etc.",
+)
+
+# Estimated time required
+time_presets = [
+    "5–15 min",
+    "15–30 minutes",
+    "30–45 minutes",
+    "1 hour",
+    "1.5 hours",
+    "2 hours",
+    "Custom",
+]
+time_choice = st.selectbox("Estimated time required", time_presets, index=1)
+if time_choice == "Custom":
+    time_required = st.text_input("Custom time description", "")
+else:
+    time_required = time_choice
+
+# Short description
+description_short = st.text_area(
+    "Short description (1–2 paragraphs)",
+    height=150,
+)
+
+# Keywords (comma-separated)
+keywords_text = st.text_input(
+    "Keywords (comma-separated)",
+    "",
+    help="Example: groundwater, solute transport, advection",
+)
+
+# Best suited for
+fit_for_options = [
+    "classroom teaching",
+    "online teaching",
+    "self learning",
+    "exam preparation",
+]
+fit_for = st.multiselect(
+    "Best suited for",
+    fit_for_options,
+    default=["self learning"],
+)
+
+# Prerequisites (comma-separated)
+prereq_text = st.text_input(
+    "Prerequisites (comma-separated, optional)",
+    "",
+    help="Example: Darcy's law, Python basics",
+)
+
+# --------- 4. FIGURES UPLOAD + METADATA (AT THE END) -----------------
+uploaded_figures = st.file_uploader(
+    "Optional figures (PNG/JPG) to bundle with the YAML and include in the PDF",
+    type=["png", "jpg", "jpeg"],
+    accept_multiple_files=True,
+)
+
+figure_inputs = []
+if uploaded_figures:
+    st.markdown("##### Figure details (optional)")
+    st.caption(
+        "For each uploaded image, you can optionally specify the type and a short caption. "
+        "If you leave these empty, the PDF will still include the images with generic labels."
     )
 
-    # Estimated time required
-    time_presets = [
-        "5–15 min",
-        "15–30 minutes",
-        "30–45 minutes",
-        "1 hour",
-        "1.5 hours",
-        "2 hours",
-        "Custom",
+    FIGURE_TYPE_OPTIONS = [
+        "(not specified)",
+        "Schematic / Diagram / Illustration",
+        "Screenshot",
+        "Photo",
+        "Other",
     ]
-    time_choice = st.selectbox("Estimated time required", time_presets, index=1)
-    if time_choice == "Custom":
-        time_required = st.text_input("Custom time description", "")
-    else:
-        time_required = time_choice
 
-    # Short description
-    description_short = st.text_area(
-        "Short description (1–2 paragraphs)",
-        height=150,
-    )
-
-    # Keywords (comma-separated)
-    keywords_text = st.text_input(
-        "Keywords (comma-separated)",
-        "",
-        help="Example: groundwater, solute transport, advection",
-    )
-
-    # Best suited for
-    fit_for_options = [
-        "classroom teaching",
-        "online teaching",
-        "self learning",
-        "exam preparation",
-    ]
-    fit_for = st.multiselect(
-        "Best suited for",
-        fit_for_options,
-        default=["self learning"],
-    )
-
-    # Prerequisites (comma-separated)
-    prereq_text = st.text_input(
-        "Prerequisites (comma-separated, optional)",
-        "",
-        help="Example: Darcy's law, Python basics",
-    )
-
-    # Optional figure upload (multiple files allowed)
-    # ToDo can we implement an option to take a screenshot/part of the screen? Or use copy-paste? That would make our life easier.
-    uploaded_figures = st.file_uploader(
-        "Optional figures (PNG/JPG) to bundle with the YAML",
-        type=["png", "jpg", "jpeg"],
-        accept_multiple_files=True,
-    )
-
-    # ---- Preview toggle + submit, side by side ----
-    col_btn1, col_btn2 = st.columns([2, 3])
-    with col_btn1:
-        show_preview = st.checkbox(
-            "🔍 Show preview after submit",
-            value=True,
-            help="If checked, a summary of your entry will appear before the download is created.",
+    for i, fig in enumerate(uploaded_figures, start=1):
+        st.markdown(f"**Image {i}:** `{fig.name}`")
+        fig_type = st.selectbox(
+            f"Type for image {i}",
+            FIGURE_TYPE_OPTIONS,
+            index=0,
+            key=f"fig_type_{i}",
         )
-    with col_btn2:
-        submitted = st.form_submit_button("Submit/Generate YAML")
+        fig_caption = st.text_input(
+            f"Caption for image {i} (optional)",
+            key=f"fig_caption_{i}",
+        )
 
-    if submitted:
-        st.session_state["form_done"] = True
-        st.session_state["ready_for_download"] = not show_preview
+        figure_inputs.append(
+            {
+                "id": i,
+                "original_filename": fig.name,
+                "type": fig_type if fig_type != "(not specified)" else "",
+                "caption": fig_caption.strip(),
+            }
+        )
 
-# TODO We need an option for restart/reset
+# --------- 5. PREVIEW TOGGLE + SUBMIT BUTTON (BOTTOM) ----------------
+st.header("4️⃣ Preview and generate")
 
+show_preview = st.checkbox(
+    "🔍 Show preview before download",
+    value=st.session_state["show_preview_flag"],
+    help="If checked, a summary of your entry will appear before the download is created.",
+)
+submit_clicked = st.button("Submit / Generate YAML")
+
+if submit_clicked:
+    st.session_state["form_done"] = True
+    st.session_state["show_preview_flag"] = show_preview
+    st.session_state["ready_for_download"] = not show_preview
+
+# If user hasn't submitted yet, stop here
 if not st.session_state["form_done"]:
     st.stop()
 
-# --------- 3. BUILD YAML STRING & FILENAME PREFIX --------------------
+# --------- 6. BUILD YAML STRING & FILENAME PREFIX --------------------
 
 # Process keywords for inline list
 keywords_list = [k.strip() for k in keywords_text.split(",") if k.strip()]
 
-# Decide topic_title and hierarchy_base (for filename) according to your rules
+# Decide topic_title and hierarchy_base (for filename)
 if new_category_mode:
     # D. Completely new category
     topic_title = (new_category_name or "TO_BE_FILLED_BY_COURSE_MANAGER").strip()
@@ -740,9 +1070,7 @@ else:
         page_id, topic_title = resolve_page(
             category_name, subcategory_choice, "(Attach to subcategory)"
         )
-        sub_prefix = CATALOG[category_name]["sub"][subcategory_choice]["page_id"][
-            :4
-        ]  # e.g. "050400_en" -> "0504"
+        sub_prefix = CATALOG[category_name]["sub"][subcategory_choice]["page_id"][:4]
         parts = [sub_prefix, slugify(new_subsub_under_existing or "new-sub-subcategory")]
         hierarchy_base = "_".join(parts)
 
@@ -778,46 +1106,46 @@ yaml_text = build_yaml_text(
     else 0,
     videos_included=videos_included if submission_type == "Streamlit app" else False,
     num_videos=int(num_videos) if submission_type == "Streamlit app" else 0,
+    figures_meta=figure_inputs,
 )
 
 # Apply language logic to hierarchy_base
 prefix_with_lang = apply_language_to_prefix(hierarchy_base, lang_code)
 
 # Final filename
-# Use first author as slug, fallback to "unknown"
-first_author_name = next((a["name"] for a in authors if a["name"].strip()), "")
+first_author_name = next((a["name"] for a in authors if (a["name"] or "").strip()), "")
 author_slug = slugify(first_author_name or "unknown")
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 base_name = f"{prefix_with_lang}_{author_slug}_{timestamp}"
 filename = f"{base_name}.yaml"
 
-# --------- 3️⃣ PREVIEW SECTION (if requested) ------------------------
-if show_preview:
-    st.header("3️⃣ Preview your entry")
+# --------- 7. PREVIEW SECTION (IF ENABLED) ---------------------------
+if st.session_state["show_preview_flag"]:
+    st.header("5️⃣ Preview your entry")
 
     # --- compute display labels for catalog location (proposed) ---
     if new_category_mode:
         display_category = (
-            f"{new_category_name} (proposed)" if new_category_name.strip() else "—"
+            f"{new_category_name} (proposed)" if (new_category_name or "").strip() else "—"
         )
-        if new_subcategory_under_newcat.strip():
+        if (new_subcategory_under_newcat or "").strip():
             display_subcategory = f"{new_subcategory_under_newcat} (proposed)"
         else:
             display_subcategory = "—"
-        if new_subsub_under_newcat.strip():
+        if (new_subsub_under_newcat or "").strip():
             display_subsub = f"{new_subsub_under_newcat} (proposed)"
         else:
             display_subsub = "—"
     else:
         display_category = category_name
-        if new_subcategory_mode and new_subcategory_name.strip():
+        if new_subcategory_mode and (new_subcategory_name or "").strip():
             display_subcategory = f"{new_subcategory_name} (proposed)"
         else:
             display_subcategory = subcategory_choice
 
-        if new_subsub_existing_mode and new_subsub_under_existing.strip():
+        if new_subsub_existing_mode and (new_subsub_under_existing or "").strip():
             display_subsub = f"{new_subsub_under_existing} (proposed)"
-        elif new_subsub_under_newsub.strip():
+        elif (new_subsub_under_newsub or "").strip():
             display_subsub = f"{new_subsub_under_newsub} (proposed)"
         else:
             display_subsub = subsub_choice or "—"
@@ -871,7 +1199,7 @@ if show_preview:
 
     with col2:
         st.markdown("#### Description")
-        if description_short.strip():
+        if (description_short or "").strip():
             st.write(description_short)
         else:
             st.caption("No description provided yet.")
@@ -892,7 +1220,7 @@ if show_preview:
             st.markdown("—")
 
         if uploaded_figures:
-            st.markdown("#### Figure preview")
+            st.markdown("#### Figure preview (uploaded)")
             for i, fig in enumerate(uploaded_figures, start=1):
                 st.image(
                     fig,
@@ -902,7 +1230,7 @@ if show_preview:
 
     st.info(
         "If everything looks correct, click the button below to create the downloadable file. "
-        "If you need to change something, edit the form above and click **Generate YAML** again."
+        "If you need to change something, edit the fields above and click **Submit / Generate YAML** again."
     )
 
     if st.button("✅ Looks good – create download file"):
@@ -911,9 +1239,13 @@ if show_preview:
     if not st.session_state["ready_for_download"]:
         st.stop()
 
-# --------- 4️⃣ YAML & DOWNLOAD ---------------------------------------
-st.header("4️⃣ Generated YAML & download")
+# --------- 8. YAML & PDF DOWNLOAD -----------------------------------
+st.header("6️⃣ Generated YAML & download")
 st.code(yaml_text, language="yaml")
+
+# Build PDF bytes (figures included if any)
+pdf_bytes = yaml_to_pdf_bytes(yaml_text, language_label, uploaded_figures)
+pdf_filename = filename.replace(".yaml", ".pdf")
 
 if uploaded_figures:
     # Create ZIP in memory with YAML + all figures
@@ -945,14 +1277,12 @@ else:
         mime="text/yaml",
     )
 
-    # PDF download button
-    pdf_bytes = yaml_to_pdf_bytes(yaml_text)
-
-    st.download_button(
-        label=f"⬇️ Download YAML as {filename.replace('.yaml', '.pdf')}",
-        data=pdf_bytes,
-        file_name=filename.replace(".yaml", ".pdf"),
-        mime="application/pdf",
-    )
+# PDF download button (always available)
+st.download_button(
+    label=f"⬇️ Download PDF as {pdf_filename}",
+    data=pdf_bytes,
+    file_name=pdf_filename,
+    mime="application/pdf",
+)
 
 st.success("File created. Please download it and send it to the course manager for review.")
