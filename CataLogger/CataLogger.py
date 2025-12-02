@@ -973,7 +973,7 @@ prereq_text = st.text_input(
 
 # --------- 4. FIGURES UPLOAD + METADATA (AT THE END) -----------------
 uploaded_figures = st.file_uploader(
-    "Optional figures (PNG/JPG) to bundle with the YAML and include in the PDF",
+    "Optional figures (PNG/JPG) to bundle with the YAML and include in the PDF. _You can upload several figures._",
     type=["png", "jpg", "jpeg"],
     accept_multiple_files=True,
 )
