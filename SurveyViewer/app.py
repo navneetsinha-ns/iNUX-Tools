@@ -20,8 +20,8 @@ def strip_html_br(text: str) -> str:
     text = re.sub(r"<.*?>", " ", text)
     return " ".join(text.split())  # collapse extra spaces
 
-st.set_page_config(page_title="SurvEye - The iNUX Survey Explorer", layout="centered")
-st.title("📊 iNUX Survey Results Viewer")
+st.set_page_config(page_title="iNUX Survey Explorer", layout="centered")
+st.title("📊 SurvEye - The iNUX Survey Results Viewer")
 
 st.markdown("This module loads iNUX SoSci survey data and plot (ordinal and nominal) or show you text answers. " \
 "You need three files; **Dataset**, **Variables Overview** and **Response Code Listing**. You should not *Include variable labels* "
