@@ -12,6 +12,9 @@ import subprocess
 from io import BytesIO
 import tempfile
 import os
+import shutil
+
+PANDOC_AVAILABLE = shutil.which("pandoc") is not None
 
 # ============================================================
 # MD/WORD PART
@@ -628,7 +631,21 @@ st.markdown("""
     
 qti_selected = st.checkbox("Generate QTI 2.1 ZIP", value=True)
 moodle_selected = st.checkbox("Generate Moodle XML", value=True)
-word_selected = st.checkbox("Generate Word (.docx)", value=False)
+if PANDOC_AVAILABLE:
+    word_selected = st.checkbox("Generate Word (.docx)", value=False)
+else:
+    # Word export is not available in headless / cloud environment
+    word_selected = False
+    st.checkbox(
+        "Generate Word (.docx)",
+        value=False,
+        disabled=True,
+        help="Word export is only available in the local version with Pandoc installed."
+    )
+    st.info(
+        "DOCX export is disabled in the online version. "
+        "To use Word export, run TransferAce locally with Pandoc installed."
+    )
 
 # Word sub-options
 if word_selected:
@@ -864,7 +881,7 @@ if convert_clicked:
             combo_buf.seek(0)
 
             st.download_button(
-                "💾 Download TRANSFER-ASS package (ZIP)",
+                "💾 Download TRANSFER-ACE package (ZIP)",
                 data=combo_buf.getvalue(),
                 file_name=f"{base_prefix}_package.zip",
                 mime="application/zip",
