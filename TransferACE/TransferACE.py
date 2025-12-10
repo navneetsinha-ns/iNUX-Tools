@@ -571,9 +571,9 @@ def build_quiz_xml(data: List[Dict[str, Any]],
 # COMBINED STREAMLIT UI
 # ============================================================
 
-st.set_page_config(page_title="TRANSFER-ASS", page_icon="✨", layout="centered")
+st.set_page_config(page_title="TRANSFER-ACE", page_icon="✨", layout="centered")
 
-st.title("Transfer :blue[ASS] ✨")
+st.title("Transfer :blue[ACE] ✨")
 st.subheader("🔄 Move your JSON assessments in QTI 2.1/MOODLE XML/DOCX format", divider = 'blue')
 st.markdown("""
     This tool enables the conversion of JSON-based multiple-choice assessments into
