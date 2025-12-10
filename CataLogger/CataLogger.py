@@ -1407,7 +1407,7 @@ else:
     
 
 yaml_text = build_yaml_text(
-    topic_title=strip_numeric_prefix(topic_title),
+    topic_title=topic_title,
     resource_title=resource_title,
     resource_type=submission_type,
     access_url=access_url,
