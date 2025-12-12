@@ -42,24 +42,25 @@ LANGUAGE_OPTIONS = {
 CATALOG = {
     "01 Water Cycle": {
         "page_id": "010000_en",
+        "description": "Broad-scale processes governing water movement in the atmosphere, surface, and subsurface environment. Hydrologic drivers and atmospheric, surface, and subsurface processes.",
         "sub": {
-            "01 Precipitation & Hydrometeorology": {
+            "01-01 Precipitation & Hydrometeorology": {
                 "page_id": "010100_en",
                 "sub": {}
             },
-            "02 Evaporation, Transpiration & ET Processes": {
+            "01-02 Evaporation, Transpiration & ET Processes": {
                 "page_id": "010200_en",
                 "sub": {}
             },
-            "03 Surface Runoff Formation": {
+            "01-03 Surface Runoff Formation": {
                 "page_id": "010300_en",
                 "sub": {}
             },
-            "04 Soil Water in the Hydrological Cycle": {
+            "01-04 Soil Water in the Hydrological Cycle": {
                 "page_id": "010400_en",
                 "sub": {}
             },
-            "05 Groundwater Recharge (process-based)": {
+            "01-05 Groundwater Recharge": {
                 "page_id": "010500_en",
                 "sub": {}
             },
@@ -68,20 +69,21 @@ CATALOG = {
 
     "02 Basic Hydrology": {
         "page_id": "020000_en",
+        "description": "Catchment-scale hydrological science and stream response, including surface hydrology, runoff processes, hydrographs, and instrumentation.",
         "sub": {
-            "01 Catchment Hydrology & Runoff Generation": {
+            "02-01 Catchment Hydrology & Runoff Generation": {
                 "page_id": "020100_en",
                 "sub": {}
             },
-            "02 Hydrographs & Flow Regimes": {
+            "02-02 Hydrographs & Flow Regimes": {
                 "page_id": "020200_en",
                 "sub": {}
             },
-            "03 Water Balance & Hydrologic Budget": {
+            "02-03 Water Balance & Hydrologic Budget": {
                 "page_id": "020300_en",
                 "sub": {}
             },
-            "04 Surface Water – Groundwater Interaction": {
+            "02-04 Surface Water – Groundwater Interaction": {
                 "page_id": "020400_en",
                 "sub": {}
             },
@@ -90,36 +92,37 @@ CATALOG = {
 
     "03 Basic Hydrogeology": {
         "page_id": "030000_en",
+        "description": "Fundamentals of groundwater physics, including groundwater flow theory and basic properties of subsurface materials.",
         "sub": {
-            "01 Hydrogeological Concepts & Aquifer Types": {
+            "03-01 Hydrogeological Concepts & Aquifer Types": {
                 "page_id": "030100_en",
                 "sub": {}
             },
-            "02 Hydrogeological Properties": {
+            "03-02 Hydrogeological Properties": {
                 "page_id": "030200_en",
                 "sub": {}
             },
-            "03 Steady Groundwater Flow": {
+            "03-03 Steady Groundwater Flow": {
                 "page_id": "030300_en",
                 "sub": {}
             },
-            "04 Transient Groundwater Flow": {
+            "03-04 Transient Groundwater Flow": {
                 "page_id": "030400_en",
                 "sub": {}
             },
-            "05 Flow to Wells": {
+            "03-05 Flow to Wells": {
                 "page_id": "030500_en",
                 "sub": {}
             },
-            "06 Regional Groundwater Flow Systems": {
+            "03-06 Regional Groundwater Flow Systems": {
                 "page_id": "030600_en",
                 "sub": {}
             },
-            "07 Conceptual Hydrogeological Models": {
+            "03-07 Conceptual Hydrogeological Models": {
                 "page_id": "030700_en",
                 "sub": {}
             },
-            "08 Conservative Solute Transport Processes": {
+            "03-08 Groundwater Balance": {
                 "page_id": "030800_en",
                 "sub": {}
             },
@@ -128,55 +131,61 @@ CATALOG = {
 
     "04 Vadose Zone Physics": {
         "page_id": "040000_en",
+        "description": "Physical processes in the unsaturated zone, including soil hydraulic properties, flow mechanisms, and soil–water interactions.",
         "sub": {
-            "01 Soil Properties": {
+            "04-01 Soil Properties": {
                 "page_id": "040100_en",
                 "sub": {}
             },
-            "02 Soil Water Retention": {
+            "04-02 Soil Water Retention": {
                 "page_id": "040200_en",
                 "sub": {}
             },
-            "03 Unsaturated Flow": {
+            "04-03 Hydraulic Conductivity Functions": {
                 "page_id": "040300_en",
                 "sub": {}
             },
-            "04 Hydraulic Conductivity Functions": {
+            "04-04 Unsaturated Flow": {
                 "page_id": "040400_en",
                 "sub": {}
             },
-            "05 Infiltration": {
+            "04-05 Infiltration": {
                 "page_id": "040500_en",
                 "sub": {}
             },
         },
     },
 
-    "05 Hydrogeochemistry": {
+    "05 Hydrogeochemistry and Contaminant Transport": {
         "page_id": "050000_en",
+        "description": "Chemical and biogeochemical processes governing groundwater composition, evolution, and contaminant behavior.",
         "sub": {
-            "01 Aqueous Chemistry and Speciation": {
+            "05-01 Aqueous Chemistry and Speciation": {
                 "page_id": "050100_en",
                 "sub": {}
             },
-            "02 Mineral Reactions and Saturation Processes": {
+            "05-02 Mineral Reactions and Saturation Processes": {
                 "page_id": "050200_en",
                 "sub": {}
             },
-            "03 Sorption and Surface Processes": {
+            "05-03 Sorption and Surface Processes": {
                 "page_id": "050300_en",
                 "sub": {}
             },
-            "04 Redox Chemistry and Biogeochemical Processes": {
+            "05-04 Redox Chemistry and Biogeochemical Processes": {
                 "page_id": "050400_en",
                 "sub": {}
             },
-            "05 Reactive Solute Transport": {
+            "05-05 Conservative Solute Transport Processes": {
                 "page_id": "050500_en",
                 "sub": {}
             },
-            "06 Isotope Hydrology": {
+            "05-06 Reactive Solute Transport": {
                 "page_id": "050600_en",
+                "sub": {}
+            },
+            "05-07 Isotope Hydrology": {
+                "page_id": "050700_en",
                 "sub": {}
             },
         },
@@ -184,20 +193,21 @@ CATALOG = {
 
     "06 Experimental Techniques and Methods": {
         "page_id": "060000_en",
+        "description": "Laboratory and field methods used to characterize hydrological and hydrogeological systems.",
         "sub": {
-            "01 Laboratory methods": {
+            "06-01 Laboratory Methods": {
                 "page_id": "060100_en",
                 "sub": {}
             },
-            "02 Hydrological Field Investigations": {
+            "06-02 Hydrological Field Investigations": {
                 "page_id": "060200_en",
                 "sub": {}
             },
-            "03 Hydrogeological Field Investigations": {
+            "06-03 Hydrogeological Field Investigations": {
                 "page_id": "060300_en",
                 "sub": {}
             },
-            "04 Aquifer Testing": {
+            "06-04 Aquifer Characterization Techniques": {
                 "page_id": "060400_en",
                 "sub": {}
             },
@@ -206,44 +216,45 @@ CATALOG = {
 
     "07 Applied Hydrogeology": {
         "page_id": "070000_en",
+        "description": "Applied groundwater problems and real-world systems, including management, engineering applications, and thematic hydrogeological domains.",
         "sub": {
-            "01 Groundwater Management": {
+            "07-01 Groundwater Management": {
                 "page_id": "070100_en",
                 "sub": {}
             },
-            "02 Groundwater–Surface Water Ecology & Dependent Ecosystems": {
+            "07-02 Groundwater–Surface Water Ecology & Dependent Ecosystems": {
                 "page_id": "070200_en",
                 "sub": {}
             },
-            "03 Groundwater in Water Supply": {
+            "07-03 Groundwater in Water Supply": {
                 "page_id": "070300_en",
                 "sub": {}
             },
-            "04 Climate Change Impacts & Groundwater Sustainability": {
+            "07-04 Climate Change Impacts & Groundwater Sustainability": {
                 "page_id": "070400_en",
                 "sub": {}
             },
-            "05 Fractured and Bedrock Hydrogeology": {
+            "07-05 Fractured and Bedrock Hydrogeology": {
                 "page_id": "070500_en",
                 "sub": {}
             },
-            "06 Karst Hydrogeology": {
+            "07-06 Karst Hydrogeology": {
                 "page_id": "070600_en",
                 "sub": {}
             },
-            "07 Freshwater–Saltwater Interaction": {
+            "07-07 Freshwater–Saltwater Interaction": {
                 "page_id": "070700_en",
                 "sub": {}
             },
-            "08 Managed Aquifer Recharge (MAR)": {
+            "07-08 Managed Aquifer Recharge (MAR)": {
                 "page_id": "070800_en",
                 "sub": {}
             },
-            "09 Groundwater Contamination & Remediation": {
+            "07-09 Groundwater Contamination & Remediation": {
                 "page_id": "070900_en",
                 "sub": {}
             },
-            "10 Geothermal Energy": {
+            "07-10 Geothermal Energy": {
                 "page_id": "071000_en",
                 "sub": {}
             },
@@ -252,52 +263,53 @@ CATALOG = {
 
     "08 Groundwater Modeling": {
         "page_id": "080000_en",
+        "description": "Numerical, computational, and data-driven approaches for groundwater flow, transport, and system analysis.",
         "sub": {
-            "01 Conceptual Model Development": {
+            "08-01 Conceptual Model Development": {
                 "page_id": "080100_en",
                 "sub": {}
             },
-            "02 Numerical Schemes": {
+            "08-02 Numerical Schemes": {
                 "page_id": "080200_en",
                 "sub": {}
             },
-            "03 Flow Modelling": {
+            "08-03 Flow Modeling": {
                 "page_id": "080300_en",
                 "sub": {}
             },
-            "04 Transport Modelling": {
+            "08-04 Transport Modeling": {
                 "page_id": "080400_en",
                 "sub": {}
             },
-            "05 Vadose Zone Modelling": {
+            "08-05 Vadose Zone Modeling": {
                 "page_id": "080500_en",
                 "sub": {}
             },
-            "06 Coupled Models": {
+            "08-06 Coupled Models": {
                 "page_id": "080600_en",
                 "sub": {}
             },
-            "07 Parameter Estimation & Calibration": {
+            "08-07 Parameter Estimation & Calibration": {
                 "page_id": "080700_en",
                 "sub": {}
             },
-            "08 Sensitivity & Uncertainty Analysis": {
+            "08-08 Sensitivity & Uncertainty Analysis": {
                 "page_id": "080800_en",
                 "sub": {}
             },
-            "09 Model Evaluation & Verification": {
+            "08-09 Model Evaluation & Verification": {
                 "page_id": "080900_en",
                 "sub": {}
             },
-            "10 MODFLOW Concepts, Packages & Tools": {
+            "08-10 MODFLOW Concepts, Packages & Tools": {
                 "page_id": "081000_en",
                 "sub": {}
             },
-            "11 Data-Driven & Machine Learning Approaches": {
+            "08-11 Data-Driven & Machine Learning Approaches": {
                 "page_id": "081100_en",
                 "sub": {}
             },
-            "12 Scenario Analysis & Decision-Support Modelling": {
+            "08-12 Scenario Analysis & Decision-Support Modeling": {
                 "page_id": "081200_en",
                 "sub": {}
             },
