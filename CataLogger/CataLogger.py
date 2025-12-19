@@ -437,7 +437,7 @@ def build_yaml_text(
     # description block with ">" style
     desc_lines = (description_short or "").strip().splitlines() or [""]
 
-    desc_block = "description_short: >\n"
+    desc_block = "description_short: |\n"
     for line in desc_lines:
         desc_block += f"  {line.rstrip()}\n"
 
