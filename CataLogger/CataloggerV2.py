@@ -327,6 +327,15 @@ NEW_SUBSUB_OPTION = "➕ Define new sub-subcategory"
 # -------------------------------------------------
 # HELPER FUNCTIONS
 # -------------------------------------------------
+
+
+
+# YAML-safe value helper:
+# Always wrap user-entered text safely so special characters (like :, #, &, quotes) do not break the YAML file.
+# Use this for ONE-LINE fields (title, url, authors, etc.).
+# Note: Longer text areas (like description_short) are handled separately using a YAML multi-line format.
+
+
 def yq(value) -> str:
     dumped = yaml.safe_dump("" if value is None else str(value), default_flow_style=True)
     return dumped.splitlines()[0].strip()
