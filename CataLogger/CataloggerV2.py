@@ -458,7 +458,7 @@ def build_yaml_text(
     # description block with ">" style
     desc_lines = (description_short or "").strip().splitlines() or [""]
 
-    desc_block = "description_short: >\n"
+    desc_block = "description_short: |\n"
     for line in desc_lines:
         desc_block += f"  {line.rstrip()}\n"
 
@@ -543,7 +543,7 @@ prerequisites: {yq(prerequisites_value)}       # Required prior knowledge (e.g.,
             fcap = (fig.get("caption") or "").strip()
             is_cover = fig.get("is_cover")  # NEW: cover flag from the app
 
-            yaml_str += f"  - id: {yq(fid)}\n"
+            yaml_str += f"  - id: {int(fid)}\n"
             if orig:
                 yaml_str += f"    original_filename: {yq(orig)}\n"
             if ftype:
