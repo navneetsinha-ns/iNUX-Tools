@@ -43,24 +43,25 @@ LANGUAGE_OPTIONS = {
 CATALOG = {
     "01 Water Cycle": {
         "page_id": "010000_en",
+        "description": "Broad-scale processes governing water movement in the atmosphere, surface, and subsurface environment. Hydrologic drivers and atmospheric, surface, and subsurface processes.",
         "sub": {
-            "01 Precipitation & Hydrometeorology": {
+            "01-01 Precipitation & Hydrometeorology": {
                 "page_id": "010100_en",
                 "sub": {}
             },
-            "02 Evaporation, Transpiration & ET Processes": {
+            "01-02 Evaporation, Transpiration & ET Processes": {
                 "page_id": "010200_en",
                 "sub": {}
             },
-            "03 Surface Runoff Formation": {
+            "01-03 Surface Runoff Formation": {
                 "page_id": "010300_en",
                 "sub": {}
             },
-            "04 Soil Water in the Hydrological Cycle": {
+            "01-04 Soil Water in the Hydrological Cycle": {
                 "page_id": "010400_en",
                 "sub": {}
             },
-            "05 Groundwater Recharge (process-based)": {
+            "01-05 Groundwater Recharge (process-based)": {
                 "page_id": "010500_en",
                 "sub": {}
             },
@@ -69,20 +70,21 @@ CATALOG = {
 
     "02 Basic Hydrology": {
         "page_id": "020000_en",
+        "description": "Catchment-scale hydrological science and stream response, including surface hydrology, runoff processes, hydrographs, and instrumentation.",
         "sub": {
-            "01 Catchment Hydrology & Runoff Generation": {
+            "02-01 Catchment Hydrology & Runoff Generation": {
                 "page_id": "020100_en",
                 "sub": {}
             },
-            "02 Hydrographs & Flow Regimes": {
+            "02-02 Hydrographs & Flow Regimes": {
                 "page_id": "020200_en",
                 "sub": {}
             },
-            "03 Water Balance & Hydrologic Budget": {
+            "02-03 Water Balance & Hydrologic Budget": {
                 "page_id": "020300_en",
                 "sub": {}
             },
-            "04 Surface Water – Groundwater Interaction": {
+            "02-04 Surface Water – Groundwater Interaction": {
                 "page_id": "020400_en",
                 "sub": {}
             },
@@ -91,36 +93,37 @@ CATALOG = {
 
     "03 Basic Hydrogeology": {
         "page_id": "030000_en",
+        "description": "Fundamentals of groundwater physics, including groundwater flow theory and basic properties of subsurface materials.",
         "sub": {
-            "01 Hydrogeological Concepts & Aquifer Types": {
+            "03-01 Hydrogeological Concepts & Aquifer Types": {
                 "page_id": "030100_en",
                 "sub": {}
             },
-            "02 Hydrogeological Properties": {
+            "03-02 Hydrogeological Properties": {
                 "page_id": "030200_en",
                 "sub": {}
             },
-            "03 Steady Groundwater Flow": {
+            "03-03 Steady Groundwater Flow": {
                 "page_id": "030300_en",
                 "sub": {}
             },
-            "04 Transient Groundwater Flow": {
+            "03-04 Transient Groundwater Flow": {
                 "page_id": "030400_en",
                 "sub": {}
             },
-            "05 Flow to Wells": {
+            "03-05 Flow to Wells": {
                 "page_id": "030500_en",
                 "sub": {}
             },
-            "06 Regional Groundwater Flow Systems": {
+            "03-06 Regional Groundwater Flow Systems": {
                 "page_id": "030600_en",
                 "sub": {}
             },
-            "07 Conceptual Hydrogeological Models": {
+            "03-07 Conceptual Hydrogeological Models": {
                 "page_id": "030700_en",
                 "sub": {}
             },
-            "08 Conservative Solute Transport Processes": {
+            "03-08 Groundwater Balance": {
                 "page_id": "030800_en",
                 "sub": {}
             },
@@ -129,55 +132,61 @@ CATALOG = {
 
     "04 Vadose Zone Physics": {
         "page_id": "040000_en",
+        "description": "Physical processes in the unsaturated zone, including soil hydraulic properties, flow mechanisms, and soil–water interactions.",
         "sub": {
-            "01 Soil Properties": {
+            "04-01 Soil Properties": {
                 "page_id": "040100_en",
                 "sub": {}
             },
-            "02 Soil Water Retention": {
+            "04-02 Soil Water Retention": {
                 "page_id": "040200_en",
                 "sub": {}
             },
-            "03 Unsaturated Flow": {
+            "04-03 Hydraulic Conductivity Functions": {
                 "page_id": "040300_en",
                 "sub": {}
             },
-            "04 Hydraulic Conductivity Functions": {
+            "04-04 Unsaturated Flow": {
                 "page_id": "040400_en",
                 "sub": {}
             },
-            "05 Infiltration": {
+            "04-05 Infiltration": {
                 "page_id": "040500_en",
                 "sub": {}
             },
         },
     },
 
-    "05 Hydrogeochemistry": {
+    "05 Hydrogeochemistry and Contaminant Transport": {
         "page_id": "050000_en",
+        "description": "Chemical and biogeochemical processes governing groundwater composition, evolution, and contaminant behavior.",
         "sub": {
-            "01 Aqueous Chemistry and Speciation": {
+            "05-01 Aqueous Chemistry and Speciation": {
                 "page_id": "050100_en",
                 "sub": {}
             },
-            "02 Mineral Reactions and Saturation Processes": {
+            "05-02 Mineral Reactions and Saturation Processes": {
                 "page_id": "050200_en",
                 "sub": {}
             },
-            "03 Sorption and Surface Processes": {
+            "05-03 Sorption and Surface Processes": {
                 "page_id": "050300_en",
                 "sub": {}
             },
-            "04 Redox Chemistry and Biogeochemical Processes": {
+            "05-04 Redox Chemistry and Biogeochemical Processes": {
                 "page_id": "050400_en",
                 "sub": {}
             },
-            "05 Reactive Solute Transport": {
+            "05-05 Conservative Solute Transport Processes": {
                 "page_id": "050500_en",
                 "sub": {}
             },
-            "06 Isotope Hydrology": {
+            "05-06 Reactive Solute Transport": {
                 "page_id": "050600_en",
+                "sub": {}
+            },
+            "05-07 Isotope Hydrology": {
+                "page_id": "050700_en",
                 "sub": {}
             },
         },
@@ -185,20 +194,21 @@ CATALOG = {
 
     "06 Experimental Techniques and Methods": {
         "page_id": "060000_en",
+        "description": "Laboratory and field methods used to characterize hydrological and hydrogeological systems.",
         "sub": {
-            "01 Laboratory methods": {
+            "06-01 Laboratory Methods": {
                 "page_id": "060100_en",
                 "sub": {}
             },
-            "02 Hydrological Field Investigations": {
+            "06-02 Hydrological Field Investigations": {
                 "page_id": "060200_en",
                 "sub": {}
             },
-            "03 Hydrogeological Field Investigations": {
+            "06-03 Hydrogeological Field Investigations": {
                 "page_id": "060300_en",
                 "sub": {}
             },
-            "04 Aquifer Testing": {
+            "06-04 Aquifer Characterization Techniques": {
                 "page_id": "060400_en",
                 "sub": {}
             },
@@ -207,44 +217,45 @@ CATALOG = {
 
     "07 Applied Hydrogeology": {
         "page_id": "070000_en",
+        "description": "Applied groundwater problems and real-world systems, including management, engineering applications, and thematic hydrogeological domains.",
         "sub": {
-            "01 Groundwater Management": {
+            "07-01 Groundwater Management": {
                 "page_id": "070100_en",
                 "sub": {}
             },
-            "02 Groundwater–Surface Water Ecology & Dependent Ecosystems": {
+            "07-02 Groundwater–Surface Water Ecology & Dependent Ecosystems": {
                 "page_id": "070200_en",
                 "sub": {}
             },
-            "03 Groundwater in Water Supply": {
+            "07-03 Groundwater in Water Supply": {
                 "page_id": "070300_en",
                 "sub": {}
             },
-            "04 Climate Change Impacts & Groundwater Sustainability": {
+            "07-04 Climate Change Impacts & Groundwater Sustainability": {
                 "page_id": "070400_en",
                 "sub": {}
             },
-            "05 Fractured and Bedrock Hydrogeology": {
+            "07-05 Fractured and Bedrock Hydrogeology": {
                 "page_id": "070500_en",
                 "sub": {}
             },
-            "06 Karst Hydrogeology": {
+            "07-06 Karst Hydrogeology": {
                 "page_id": "070600_en",
                 "sub": {}
             },
-            "07 Freshwater–Saltwater Interaction": {
+            "07-07 Freshwater–Saltwater Interaction": {
                 "page_id": "070700_en",
                 "sub": {}
             },
-            "08 Managed Aquifer Recharge (MAR)": {
+            "07-08 Managed Aquifer Recharge (MAR)": {
                 "page_id": "070800_en",
                 "sub": {}
             },
-            "09 Groundwater Contamination & Remediation": {
+            "07-09 Groundwater Contamination & Remediation": {
                 "page_id": "070900_en",
                 "sub": {}
             },
-            "10 Geothermal Energy": {
+            "07-10 Geothermal Energy": {
                 "page_id": "071000_en",
                 "sub": {}
             },
@@ -253,52 +264,53 @@ CATALOG = {
 
     "08 Groundwater Modeling": {
         "page_id": "080000_en",
+        "description": "Numerical, computational, and data-driven approaches for groundwater flow, transport, and system analysis.",
         "sub": {
-            "01 Conceptual Model Development": {
+            "08-01 Conceptual Model Development": {
                 "page_id": "080100_en",
                 "sub": {}
             },
-            "02 Numerical Schemes": {
+            "08-02 Numerical Schemes": {
                 "page_id": "080200_en",
                 "sub": {}
             },
-            "03 Flow Modelling": {
+            "08-03 Flow Modeling": {
                 "page_id": "080300_en",
                 "sub": {}
             },
-            "04 Transport Modelling": {
+            "08-04 Transport Modeling": {
                 "page_id": "080400_en",
                 "sub": {}
             },
-            "05 Vadose Zone Modelling": {
+            "08-05 Vadose Zone Modeling": {
                 "page_id": "080500_en",
                 "sub": {}
             },
-            "06 Coupled Models": {
+            "08-06 Coupled Models": {
                 "page_id": "080600_en",
                 "sub": {}
             },
-            "07 Parameter Estimation & Calibration": {
+            "08-07 Parameter Estimation & Calibration": {
                 "page_id": "080700_en",
                 "sub": {}
             },
-            "08 Sensitivity & Uncertainty Analysis": {
+            "08-08 Sensitivity & Uncertainty Analysis": {
                 "page_id": "080800_en",
                 "sub": {}
             },
-            "09 Model Evaluation & Verification": {
+            "08-09 Model Evaluation & Verification": {
                 "page_id": "080900_en",
                 "sub": {}
             },
-            "10 MODFLOW Concepts, Packages & Tools": {
+            "08-10 MODFLOW Concepts, Packages & Tools": {
                 "page_id": "081000_en",
                 "sub": {}
             },
-            "11 Data-Driven & Machine Learning Approaches": {
+            "08-11 Data-Driven & Machine Learning Approaches": {
                 "page_id": "081100_en",
                 "sub": {}
             },
-            "12 Scenario Analysis & Decision-Support Modelling": {
+            "08-12 Scenario Analysis & Decision-Support Modeling": {
                 "page_id": "081200_en",
                 "sub": {}
             },
@@ -315,6 +327,26 @@ NEW_SUBSUB_OPTION = "➕ Define new sub-subcategory"
 # -------------------------------------------------
 # HELPER FUNCTIONS
 # -------------------------------------------------
+
+
+
+# YAML-safe value helper:
+# Always wrap user-entered text safely so special characters (like :, #, &, quotes) do not break the YAML file.
+# Use this for ONE-LINE fields (title, url, authors, etc.).
+# Note: Longer text areas (like description_short) are handled separately using a YAML multi-line format.
+
+
+def yq(value) -> str:
+    dumped = yaml.safe_dump("" if value is None else str(value), default_flow_style=True)
+    return dumped.splitlines()[0].strip()
+
+
+
+
+
+
+
+
 def slugify(text: str) -> str:
     text = (text or "").strip().lower()
     text = re.sub(r"[^a-z0-9]+", "-", text)
@@ -400,14 +432,15 @@ def build_yaml_text(
     catalog_subsubcategory = catalog_subsubcategory or "—"
 
     catalog_location_yaml = (
-        f'catalog_category: "{catalog_category}"\n'
-        f'catalog_subcategory: "{catalog_subcategory}"\n'
-        f'catalog_subsubcategory: "{catalog_subsubcategory}"\n\n'
+        f"catalog_category: {yq(catalog_category)}\n"
+        f"catalog_subcategory: {yq(catalog_subcategory)}\n"
+        f"catalog_subsubcategory: {yq(catalog_subsubcategory)}\n\n"
     )
+
 
     # keywords inline list: [a, b, c] or [] if empty
     if keywords_list:
-        keywords_inline = "[{}]".format(", ".join(keywords_list))
+        keywords_inline = "[{}]".format(", ".join(yq(k) for k in keywords_list))
     else:
         keywords_inline = "[]"
 
@@ -418,7 +451,7 @@ def build_yaml_text(
     if fit_for_list:
         fit_for_block = "fit_for:\n"
         for item in fit_for_list:
-            fit_for_block += f"  - {item}\n"
+            fit_for_block += f"  - {yq(item)}\n"
     else:
         fit_for_block = "fit_for: []\n"
 
@@ -449,8 +482,9 @@ def build_yaml_text(
     if authors_clean:
         authors_block = "authors:\n"
         for a in authors_clean:
-            authors_block += f"  - name: {a['name']}\n"
-            authors_block += f"    affiliation: {a['affiliation']}\n"
+            authors_block += f"  - name: {yq(a['name'])}\n"
+            authors_block += f"    affiliation: {yq(a['affiliation'])}\n"
+
     else:
         authors_block = "authors: []\n"
 
@@ -459,7 +493,7 @@ def build_yaml_text(
     if references_list:
         refs_block = "references:\n"
         for r in references_list:
-            refs_block += f"  - {r}\n"
+            refs_block += f"  - {yq(r)}\n"
     else:
         refs_block = "references: []\n"
 
@@ -467,12 +501,12 @@ def build_yaml_text(
 # item_id: A unique, simple slug for this item (e.g., aquifer_test_1). 
 
 item_id: TO_BE_FILLED_BY_COURSE_MANAGER
-topic: {topic_title} # Must match the title of the parent catalog page.
-title: {resource_title}    # The full, descriptive name of the resource.
+topic: {yq(topic_title)} # Must match the title of the parent catalog page.
+title: {yq(resource_title)}    # The full, descriptive name of the resource.
 
 # --- TYPE AND ACCESS ---
-resource_type: {resource_type}            # Required. Options: Streamlit app, Jupyter Notebook, Video, Dataset, Other.
-url: {access_url}      # The direct link to launch the app, notebook on Binder, or video on YouTube.
+resource_type: {yq(resource_type)}            # Required. Options: Streamlit app, Jupyter Notebook, Video, Dataset, Other.
+url: {yq(access_url)}      # The direct link to launch the app, notebook on Binder, or video on YouTube.
 date_released: TO_BE_FILLED_BY_COURSE_MANAGER               # Release date in YYYY-MM-DD format.
 
 # --- CONTENT AND METADATA ---
@@ -488,8 +522,8 @@ videos_included: {videos_str}
 num_videos: {num_videos}
 
 # --- EDUCATIONAL FIT ---
-time_required: {time_required}             # Estimated time for a student to complete the activity (e.g., 30 minutes, 1.5 hours).
-prerequisites: {prerequisites_value}       # Required prior knowledge (e.g., Darcy's Law, Python basics, basic calculus).
+time_required: {yq(time_required)}             # Estimated time for a student to complete the activity (e.g., 30 minutes, 1.5 hours).
+prerequisites: {yq(prerequisites_value)}       # Required prior knowledge (e.g., Darcy's Law, Python basics, basic calculus).
 {fit_for_block.rstrip()}
 
 # --- AUTHOR AND REFERENCE ---
@@ -509,13 +543,13 @@ prerequisites: {prerequisites_value}       # Required prior knowledge (e.g., Dar
             fcap = (fig.get("caption") or "").strip()
             is_cover = fig.get("is_cover")  # NEW: cover flag from the app
 
-            yaml_str += f"  - id: {fid}\n"
+            yaml_str += f"  - id: {yq(fid)}\n"
             if orig:
-                yaml_str += f"    original_filename: {orig}\n"
+                yaml_str += f"    original_filename: {yq(orig)}\n"
             if ftype:
-                yaml_str += f"    type: {ftype}\n"
+                yaml_str += f"    type: {yq(ftype)}\n"
             if fcap:
-                yaml_str += f"    caption: {fcap}\n"
+                yaml_str += f"    caption: {yq(fcap)}\n"
             if is_cover:                     # NEW: only write if True
                 yaml_str += "    is_cover: true\n"
     else:
@@ -748,17 +782,6 @@ def compute_upload_signature(uploaded_file) -> str:
         return ""
 
 
-def clear_author_widget_keys():
-    """
-    Remove author widget keys so switching modes doesn't keep old imported values.
-    """
-    keys_to_remove = [
-        k for k in st.session_state.keys()
-        if k.startswith("author_name_") or k.startswith("author_aff_")
-    ]
-    for k in keys_to_remove:
-        st.session_state.pop(k, None)
-
 
 # YAML → PDF
 def yaml_to_pdf_bytes(yaml_text: str, language_label: str, uploaded_figures=None) -> bytes:
@@ -766,7 +789,15 @@ def yaml_to_pdf_bytes(yaml_text: str, language_label: str, uploaded_figures=None
     Create a nicely formatted A4 PDF 'resource sheet' from the YAML text.
     Uses a structured layout (sections, tables, figure section).
     """
-    data = yaml.safe_load(yaml_text) or {}
+
+    try:
+        data = yaml.safe_load(yaml_text) or {}
+    except yaml.YAMLError as e:
+        st.error("Generated YAML is invalid — PDF cannot be created.")
+        st.exception(e)
+        st.info("Tip: check for special characters in Title, Authors, Fit-for items, captions, or URLs.")
+        st.stop()
+
 
     buffer = BytesIO()
 
@@ -1177,10 +1208,16 @@ st.subheader(
 st.markdown(
     """
     Use this form to propose a new **teaching resource** for the iNUX catalog. The subsequent mask collects all required information.
-    
+
     At the end, you can download a YAML (txt) file that contains all data, and send it to the catalog editors for further processing.
+
+    **Important:** Please avoid special characters in text fields (especially the **Title**), e.g. `: { } [ ] # & * | > <`.
+    
+    Use English letters, numbers, spaces, hyphens `-`, and parentheses `( )` where possible.
+
     """
 )
+
 
 
 # -------------------------------------------------
@@ -1199,6 +1236,7 @@ with colA:
         st.session_state["start_mode"] = "upload"
         st.session_state["form_done"] = False
         st.session_state["ready_for_download"] = False
+        st.session_state.pop("last_import_sig", None)
         st.rerun()
 
 
