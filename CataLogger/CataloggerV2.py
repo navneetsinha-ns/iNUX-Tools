@@ -422,6 +422,7 @@ def build_yaml_text(
     catalog_category=None,       # NEW: for YAML header
     catalog_subcategory=None,    # NEW
     catalog_subsubcategory=None, # NEW
+    topic_page_id: str = "",
 ):
     """
     Build YAML as a formatted string matching the template + comments.
@@ -497,12 +498,21 @@ def build_yaml_text(
     else:
         refs_block = "references: []\n"
 
+
+        # --- topic_page_id line (only if known) ---
+    topic_page_id_line = ""
+    if (topic_page_id or "").strip():
+        topic_page_id_line = (
+            f"topic_page_id: {yq(topic_page_id)}  "
+            f"# Stable mapping key (preferred)\n"
+        )
+
     yaml_str = catalog_location_yaml + f"""# --- RESOURCE IDENTIFICATION AND TOPIC MAPPING ---
 # item_id: A unique, simple slug for this item (e.g., aquifer_test_1). 
 
 item_id: TO_BE_FILLED_BY_COURSE_MANAGER
-topic: {yq(topic_title)} # Must match the title of the parent catalog page.
-title: {yq(resource_title)}    # The full, descriptive name of the resource.
+{topic_page_id_line}topic: {yq(topic_title)} # Human-readable topic label (fallback mapping)
+title: {yq(resource_title)}
 
 # --- TYPE AND ACCESS ---
 resource_type: {yq(resource_type)}            # Required. Options: Streamlit app, Jupyter Notebook, Video, Dataset, Other.
@@ -1687,6 +1697,8 @@ keywords_list = [k.strip() for k in keywords_text.split(",") if k.strip()]
 # Process references (one per line)
 references_list = [r.strip() for r in references_text.splitlines() if r.strip()]
 
+page_id = ""
+
 # Decide topic_title and hierarchy_base (for filename)
 if new_category_mode:
     # D. Completely new category
@@ -1784,6 +1796,8 @@ yaml_text = build_yaml_text(
     catalog_category=catalog_category,
     catalog_subcategory=catalog_subcategory,
     catalog_subsubcategory=catalog_subsubcategory,
+    topic_page_id=page_id,
+
 )
 
 # Apply language logic to hierarchy_base
