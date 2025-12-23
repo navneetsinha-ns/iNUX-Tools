@@ -1,3 +1,72 @@
+# ============================================================
+# VERSION OVERVIEW — V3 (relative to V2)
+# ============================================================
+#
+# V3 is a structural and robustness upgrade over V2.
+# The core purpose (YAML → well-formatted PDF resource sheet)
+# remains unchanged, but the internal layout logic, YAML handling,
+# and pagination behavior have been significantly improved.
+#
+# Key changes from V2 → V3:
+#
+# 1. Layout & Pagination Robustness
+#    - Introduced KeepTogether-based section rendering for tables
+#      (e.g., Basic information, Technical details, Educational fit)
+#      to prevent tables from splitting awkwardly across pages.
+#    - Section headers and their tables now move together if space
+#      is insufficient on the current page.
+#
+# 2. Dynamic Section Numbering
+#    - Section numbers increment only when a section is actually
+#      rendered (i.e., empty sections do not consume numbers).
+#    - Ensures stable, reader-friendly numbering regardless of
+#      missing or optional YAML fields.
+#
+# 3. Standardized Table Styling
+#    - Centralized table styling via `apply_std_table_style()`
+#      to ensure consistent fonts, padding, grid lines, and
+#      background coloring across all tables.
+#    - Removes duplicated TableStyle definitions present in V2.
+#
+# 4. Improved YAML Robustness
+#    - Enhanced `as_list()` helper to safely handle:
+#        • strings
+#        • lists / tuples / sets
+#        • YAML !!set (parsed by PyYAML as dict-like objects)
+#    - Prevents crashes or silent mis-formatting for legacy or
+#      non-uniform YAML inputs.
+#
+# 5. Catalog-Aware Metadata Support
+#    - Added support for catalog-driven fields:
+#        • catalog_category
+#        • catalog_subcategory
+#        • (optional) topic_page_id
+#    - Title block now reflects catalog location instead of
+#      relying solely on a flat topic label.
+#
+# 6. Cleaner Author & Reference Handling
+#    - Authors are rendered only if a valid name exists.
+#    - References safely handle YAML oddities (dict / set forms).
+#
+# 7. Header & Footer Refinements
+#    - Header/footer logic clarified and documented with explicit
+#      layout control comments.
+#    - Logo positioning and footer justification behavior refined
+#      for visual consistency.
+#
+# Summary:
+# V3 focuses on correctness, maintainability, and publication-grade
+# layout stability, while keeping the external YAML interface and
+# user workflow compatible with V2.
+#
+# ============================================================
+
+
+
+
+
+
+
 import io
 from io import BytesIO
 from pathlib import Path
@@ -42,12 +111,23 @@ def yaml_to_pdf_bytes(yaml_text: str, language_label: str, uploaded_figures=None
         return str(val)
 
     def as_list(val):
-        # Normalizes a field to a list so code can treat str/list uniformly
+        """
+        Normalize YAML fields to a Python list.
+        Supports: str, list, tuple, set, and YAML-set parsed as dict.
+        """
         if val is None:
             return []
-        if isinstance(val, list):
-            return val
+
+        # YAML !!set is loaded by PyYAML as dict-like (keys with None values)
+        if isinstance(val, dict):
+            # treat as list of keys
+            return list(val.keys())
+
+        if isinstance(val, (list, tuple, set)):
+            return list(val)
+
         return [val]
+
 
     buffer = BytesIO()
 
@@ -114,7 +194,7 @@ def yaml_to_pdf_bytes(yaml_text: str, language_label: str, uploaded_figures=None
         parent=styles["Heading2"],
         fontSize=13,
         leading=16,
-        spaceBefore=10,
+        spaceBefore=4,
         spaceAfter=4,
     )
     caption_style = ParagraphStyle(
@@ -144,6 +224,32 @@ def yaml_to_pdf_bytes(yaml_text: str, language_label: str, uploaded_figures=None
         story.append(Paragraph(f"{section_no}. {title_text}", section_style))
         return section_no
 
+    from reportlab.platypus import KeepTogether
+
+    def add_section_with_table(title_text: str, table: Table, after_space_mm: float = 6):
+        """
+        Adds a numbered section heading + a table as a single 'keep together' block.
+        If the block doesn't fit, it is moved to the next page instead of splitting the table.
+        """
+        nonlocal section_no
+        section_no += 1
+        heading = Paragraph(f"{section_no}. {title_text}", section_style)
+        story.append(KeepTogether([heading, table, Spacer(1, after_space_mm * mm)]))
+        
+    def apply_std_table_style(tbl: Table):
+        tbl.setStyle(TableStyle([
+            ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+            ("FONTSIZE", (0, 0), (-1, -1), 9),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("INNERGRID", (0, 0), (-1, -1), 0.25, colors.grey),
+            ("BOX", (0, 0), (-1, -1), 0.25, colors.grey),
+            ("BACKGROUND", (0, 0), (0, -1), colors.whitesmoke),
+            ("LEFTPADDING", (0, 0), (-1, -1), 4),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+            ("TOPPADDING", (0, 0), (-1, -1), 2),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+        ]))
+
 
     # ============================================================
     # TITLE BLOCK (TOP OF FIRST CONTENT PAGE)
@@ -153,18 +259,36 @@ def yaml_to_pdf_bytes(yaml_text: str, language_label: str, uploaded_figures=None
     # - What metadata to show at top
     title = safe_str(data.get("title")) or "Untitled resource"
 
-    topic = safe_str(data.get("topic")) or "—"
+    # --- Catalog location (from Vcatalogger YAML) ---
+    catalog_category      = safe_str(data.get("catalog_category")).strip() or "—"
+    catalog_subcategory   = safe_str(data.get("catalog_subcategory")).strip() or "—"
+    #catalog_subsubcategory= safe_str(data.get("catalog_subsubcategory")).strip() or "—"
+
+    # --- Topic label + stable mapping id (optional) ---
+    topic_label   = safe_str(data.get("topic")).strip() or "—"
+    topic_page_id = safe_str(data.get("topic_page_id")).strip()
+
+    # Build a clean location line (skip placeholders)
+    parts = [p for p in (catalog_category, catalog_subcategory) if p and p != "—"]
+    catalog_line = " → ".join(parts) if parts else "—"
+
+    # Optionally append topic_page_id
+    #topic_line = f"{topic_label} ({topic_page_id})" if topic_page_id else topic_label
+
     raw_item_id = safe_str(data.get("item_id")).strip()
 
     story.append(Paragraph(title, title_style))
-    story.append(Paragraph(f"<b>Topic:</b> {topic}", label_style))
+    story.append(Paragraph(f"<b>Topic:</b> {catalog_line}", label_style))
+    #story.append(Paragraph(f"<b>Topic:</b> {topic_line}", label_style))
     story.append(Paragraph(f"<b>Language:</b> {language_label}", label_style))
+
+
 
     # Optional: show/hide item_id (currently OFF by default)
     if SHOW_ITEM_ID and raw_item_id and "TO_BE_FILLED" not in raw_item_id.upper():
         story.append(Paragraph(f"<b>Item ID:</b> {raw_item_id}", label_style))
 
-    story.append(Spacer(1, 8))  # : vertical spacing after title block
+    story.append(Spacer(1, 4))  # : vertical spacing after title block
 
     # ============================================================
     # BASIC INFORMATION — render only if something exists
@@ -189,22 +313,10 @@ def yaml_to_pdf_bytes(yaml_text: str, language_label: str, uploaded_figures=None
         basic_data.append(["Time required", cell(time_required)])
 
     if basic_data:
-        add_section("Basic information")
         basic_table = Table(basic_data, colWidths=[45 * mm, 115 * mm])
-        basic_table.setStyle(
-            TableStyle(
-                [
-                    ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
-                    ("FONTSIZE", (0, 0), (-1, -1), 9),
-                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                    ("INNERGRID", (0, 0), (-1, -1), 0.25, colors.grey),
-                    ("BOX", (0, 0), (-1, -1), 0.25, colors.grey),
-                    ("BACKGROUND", (0, 0), (0, -1), colors.whitesmoke),
-                ]
-            )
-        )
-        story.append(basic_table)
-        story.append(Spacer(1, 6))
+        apply_std_table_style(basic_table)
+        add_section_with_table("Basic information", basic_table, after_space_mm=6)
+
 
 
     # ============================================================
@@ -277,23 +389,14 @@ def yaml_to_pdf_bytes(yaml_text: str, language_label: str, uploaded_figures=None
 
     # ✅ Only render the section if we have at least one row
     if tech_data:
-        add_section("Technical details")
-
         tech_table = Table(tech_data, colWidths=[60 * mm, 100 * mm])
-        tech_table.setStyle(
-            TableStyle(
-                [
-                    ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
-                    ("FONTSIZE", (0, 0), (-1, -1), 9),
-                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                    ("INNERGRID", (0, 0), (-1, -1), 0.25, colors.grey),
-                    ("BOX", (0, 0), (-1, -1), 0.25, colors.grey),
-                    ("BACKGROUND", (0, 0), (0, -1), colors.whitesmoke),
-                ]
-            )
-        )
-        story.append(tech_table)
-        story.append(Spacer(1, 6))
+        apply_std_table_style(tech_table)
+        add_section_with_table("Technical details", tech_table, after_space_mm=6)
+
+
+
+
+
 
 
 
@@ -318,24 +421,10 @@ def yaml_to_pdf_bytes(yaml_text: str, language_label: str, uploaded_figures=None
 
     # ✅ Only render the section if we have at least one row
     if edu_data:
-        add_section("Educational fit")
-
         edu_table = Table(edu_data, colWidths=[60 * mm, 100 * mm])
-        edu_table.setStyle(
-            TableStyle(
-                [
-                    ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
-                    ("FONTSIZE", (0, 0), (-1, -1), 9),
-                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                    ("INNERGRID", (0, 0), (-1, -1), 0.25, colors.grey),
-                    ("BOX", (0, 0), (-1, -1), 0.25, colors.grey),
-                    ("BACKGROUND", (0, 0), (0, -1), colors.whitesmoke),
-                ]
-            )
-        )
-        story.append(edu_table)
-        story.append(Spacer(1, 6))
-
+        apply_std_table_style(edu_table)
+        add_section_with_table("Educational fit", edu_table, after_space_mm=6)
+       
 
     # ============================================================
     # AUTHORS & REFERENCES — render only if something exists
@@ -344,8 +433,8 @@ def yaml_to_pdf_bytes(yaml_text: str, language_label: str, uploaded_figures=None
     authors_list = [a for a in (data.get("authors") or []) if isinstance(a, dict)]
     refs = as_list(data.get("references"))
 
-    has_authors = bool(authors_list)
-    has_refs = bool([r for r in refs if safe_str(r).strip()])
+    has_authors = any(safe_str(a.get("name")).strip() for a in authors_list)
+    has_refs = any(safe_str(r).strip() for r in refs)
 
     if has_authors or has_refs:
         add_section("Authors & references")
@@ -353,7 +442,9 @@ def yaml_to_pdf_bytes(yaml_text: str, language_label: str, uploaded_figures=None
         if has_authors:
             story.append(Paragraph("<b>Authors</b>", label_style))
             for a in authors_list:
-                name = safe_str(a.get("name")).strip() or "Unknown"
+                name = safe_str(a.get("name")).strip()
+                if not name:
+                    continue
                 aff = safe_str(a.get("affiliation")).strip()
                 line = name + (f" ({aff})" if aff else "")
                 story.append(Paragraph(f"• {line}", styles["Normal"]))
@@ -361,11 +452,20 @@ def yaml_to_pdf_bytes(yaml_text: str, language_label: str, uploaded_figures=None
 
         if has_refs:
             story.append(Paragraph("<b>References</b>", label_style))
+
             for r in refs:
+                # YAML !!set → dict; legacy oddities → set
+                if isinstance(r, dict):
+                    r = ", ".join(str(k) for k in r.keys())
+                elif isinstance(r, set):
+                    r = ", ".join(str(x) for x in r)
+
                 r_txt = safe_str(r).strip()
                 if r_txt:
                     story.append(Paragraph(f"– {r_txt}", styles["Normal"]))
+
             story.append(Spacer(1, 8))
+
 
     # ============================================================
     # 6. FIGURES & ILLUSTRATIONS
@@ -426,52 +526,67 @@ def yaml_to_pdf_bytes(yaml_text: str, language_label: str, uploaded_figures=None
     # ============================================================
     # HEADER / FOOTER DRAWING (CANVAS-LEVEL)
     # ============================================================
-    #  HERE:
-    # - Header/footer band size is controlled by "15 * mm"
-    # - Logo placement: x/y values
-    # - Footer banner image size + placement
-    # - Footer text font size and justification
+    # CONFIG (do not change unless you want layout changes):
+    # - Header band anchor: header_y = height - 15*mm
+    # - Logo: path, x/y offsets, height
+    # - Header text: x/y offsets
+    # - Separator line: width and y offset
+    # - Footer band height: band_h = 15*mm
+    # - Footer image: path, x/y, width/height
+    # - Footer text block: justification + reserved page-number zone
     def add_header_footer(canvas, doc_):
         page_num = canvas.getPageNumber()
         width, height = A4
         margin = 20 * mm
 
         # =========================
-        # HEADER (15mm band)
+        # HEADER (15 mm band)
         # =========================
-        header_y = height - 15 * mm  # : moves header band up/down
+        header_y = height - 15 * mm  # moves header band up/down
         canvas.setFont("Helvetica", 9)
 
-        # Logo ( x/y/height)
+        # --- Header logo (iNUX) ---
+        # x-position note:
+        #   - Increase 169 -> moves logo LEFT (more negative x)
+        #   - Decrease 169 -> moves logo RIGHT
         try:
             canvas.drawImage(
-                "FIGS/iNUX_wLogo.png",
-                margin - 8 * mm,     # x (move left/right)
-                header_y - 4 * mm,   # y (move up/down)
-                height=12 * mm,      # logo height
+                "FIGS/iNUX_wLogo_flat.png",
+                margin - 169 * mm,      # x (logo horizontal position)
+                header_y - 4 * mm,      # y (logo vertical position)
+                height=12 * mm,         # logo height
                 preserveAspectRatio=True,
                 mask="auto",
             )
         except Exception:
             pass
 
-        # Header text ( x/y or replace with drawCentredString if desired)
-        canvas.drawString(margin, header_y, "Erasmus+ Project iNUX ")
+        # --- Header text ---
+        canvas.drawString(
+            margin + 13 * mm,          # x (text start)
+            header_y + 0.5 * mm,       # y (text baseline)
+            "Erasmus+ Project iNUX ",
+        )
 
-        # Header separator line ( y position)
+        # --- Header separator line ---
         canvas.setLineWidth(0.5)
-        canvas.line(margin, header_y - 2 * mm, width - margin, header_y - 2 * mm)
+        canvas.line(
+            margin,
+            header_y - 3 * mm,         # y (line position)
+            width - margin,
+            header_y - 3 * mm,
+        )
 
         # =========================
-        # FOOTER (15mm band)
+        # FOOTER (15 mm band)
         # =========================
-        band_h = 15 * mm  # : footer band height
+        band_h = 15 * mm              # footer band height
         canvas.setLineWidth(0.5)
         canvas.line(margin, band_h, width - margin, band_h)  # top border of footer band
 
-        # Footer image (EU banner) placement + size
+        # --- Footer image (EU banner) ---
         img_w, img_h = 28 * mm, 11 * mm
-        img_x, img_y = margin, 2 * mm  # : move image inside footer band
+        img_x, img_y = margin, 2 * mm  # move image inside footer band
 
         try:
             canvas.drawImage(
@@ -486,20 +601,21 @@ def yaml_to_pdf_bytes(yaml_text: str, language_label: str, uploaded_figures=None
         except Exception:
             pass
 
-        # Page number bottom-right ( y position "3 * mm")
+        # --- Page number (bottom-right) ---
         page_zone_w = 18 * mm  # reserved space so footer text does not collide with page number
         canvas.setFont("Helvetica", 9)
         canvas.drawRightString(width - margin, 3 * mm, str(page_num))
 
-        # Footer justified text (uses remaining width between image and page number)
+        # --- Footer justified text ---
+        # Uses a Table+Paragraph to get reliable justification in the footer band.
         from reportlab.platypus import Paragraph, Table, TableStyle
         from reportlab.lib.styles import ParagraphStyle
 
         footer_style = ParagraphStyle(
             "FooterJustified",
             fontName="Helvetica",
-            fontSize=6.8,   # : footer text size
-            leading=7.6,    # : footer line spacing
+            fontSize=6.8,   # footer text size
+            leading=7.6,    # footer line spacing
             alignment=4,    # JUSTIFY
         )
 
@@ -510,20 +626,24 @@ def yaml_to_pdf_bytes(yaml_text: str, language_label: str, uploaded_figures=None
             "responsible for them."
         )
 
-        text_x = img_x + img_w + 5 * mm  # : gap between image and text
+        text_x = img_x + img_w + 5 * mm  # gap between image and text
         text_w = (width - margin - page_zone_w) - text_x  # available width for footer text
 
-        # The Table+Paragraph trick is used so justify works reliably in the footer band
         t = Table([[Paragraph(eu_text, footer_style)]], colWidths=[text_w], rowHeights=[band_h])
-        t.setStyle(TableStyle([
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 0),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-            ("TOPPADDING", (0, 0), (-1, -1), 0),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-        ]))
+        t.setStyle(
+            TableStyle(
+                [
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                    ("TOPPADDING", (0, 0), (-1, -1), 0),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                ]
+            )
+        )
         t.wrapOn(canvas, text_w, band_h)
-        t.drawOn(canvas, text_x, 0)  # : move text up/down inside band
+        t.drawOn(canvas, text_x, 0)  # move text up/down inside band
+
 
     # ============================================================
     # BUILD PDF
